@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/grocery.dart';
 import '../../data/mock_grocery_repository.dart';
+import 'grocery_form.dart';
 
 class GroceryList extends StatefulWidget {
   const GroceryList({super.key});
@@ -11,15 +12,40 @@ class GroceryList extends StatefulWidget {
 
 class _GroceryListState extends State<GroceryList> {
 
-
-  void onCreate() {
-    // TODO-4 - Navigate to the form screen using the Navigator push 
-    // Navigate to a simple form screen (placeholder)
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (ctx) => const AddGroceryScreen(),
-      ),
+  final ScrollController _scrollController = ScrollController();
+// TODO-4 - Navigate to the form screen using the Navigator push 
+  Future<void> onCreate() async {
+    // Push the form and await the created Grocery via pop()
+    final newGrocery = await Navigator.of(context).push<Grocery>(
+      MaterialPageRoute(builder: (ctx) => const NewItem()),
     );
+
+    if (newGrocery != null) {
+      setState(() {
+        dummyGroceryItems.add(newGrocery);
+      });
+
+      // After the frame is rendered, scroll to the bottom to reveal the new item
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent + 100,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added "${newGrocery.name}"')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -30,6 +56,7 @@ class _GroceryListState extends State<GroceryList> {
       // TODO-1 - Display groceries with an Item builder and  LIst Tile
       // Display groceries with an Item builder and ListTile
       content = ListView.builder(
+        controller: _scrollController,
         itemCount: dummyGroceryItems.length,
         itemBuilder: (ctx, index) => GroceryTile(grocery: dummyGroceryItems[index]),
       );
@@ -57,7 +84,6 @@ class GroceryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      //  2 - Display groceries with an Item builder and  LIst Tile
       // Build a tappable ListTile that shows category color name and quantity
     return ListTile(
       leading: Container( width: 15,height: 15,
@@ -69,10 +95,11 @@ class GroceryTile extends StatelessWidget {
       title: Text(  grocery.name),
       trailing: Text(grocery.quantity.toString()),
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tapped "${grocery.name}"')),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text('Tapped "${grocery.name}"')),
+        // );
       },
+
     );
   }
 }
